@@ -7,7 +7,7 @@ use anyhow::Result;
 use hidapi::HidApi;
 use log::debug;
 use udev::Enumerator;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::controller::{Controller, Status};
 
@@ -15,6 +15,36 @@ pub async fn controllers_async() -> Result<Vec<Controller>> {
     // Spawn a tokio blocking task because `get_controllers()` is a blocking API
     let controllers = tokio::task::spawn_blocking(controllers).await??;
     Ok(controllers)
+}
+
+fn rename_duplicate_controllers(vec: &mut Vec<Controller>) {
+    let mut counts: HashMap<String, usize> = HashMap::new();
+    for c in vec.iter() {
+        *counts.entry(c.name.clone()).or_insert(0) += 1;
+    }
+
+    for c in vec.iter_mut() {
+        if counts.get(&c.name).copied().unwrap_or(0) >= 2 {
+            if c.uniq.is_empty() {
+                continue;
+            }
+
+            let suffix: String = if c.uniq.chars().count() <= 4 {
+                c.uniq.clone()
+            } else {
+                c.uniq
+                    .chars()
+                    .rev()
+                    .take(4)
+                    .collect::<Vec<char>>()
+                    .into_iter()
+                    .rev()
+                    .collect()
+            };
+
+            c.name = format!("{} ({})", c.name.replace("Xbox ", "").replace("Microsoft ", ""), suffix);
+        }
+    }
 }
 
 pub fn controllers() -> Result<Vec<Controller>> {
@@ -176,27 +206,37 @@ pub fn controllers() -> Result<Vec<Controller>> {
     let mut enumerator = Enumerator::new()?;
     enumerator.match_subsystem("input")?;
 
-    let mut controllers = Vec::new();
-    let mut seen_gips = HashSet::new();
+    let mut seen_gips_map = HashMap::new();
 
     for device in enumerator.scan_devices()? {
-        let mut controller = Controller::from_udev(&device, "Unknown Controller", 0, Status::Unknown, false);
+        let mut controller = Controller::from_udev(&device, 0, Status::Unknown, false);
 
         // Only include records where gip starts with "gip" or "input" and exclude "gip0.1"
-        if !(controller.gip.starts_with("gip") || controller.gip.starts_with("input")) || controller.gip == "gip0.1" {
+        if !(controller.gip.starts_with("gip") || controller.gip.starts_with("input")) || controller.gip == "gip0.1"  {
             continue;
         }
 
-        // Deduplicate based on 'gip'
-        if seen_gips.insert(controller.gip.clone()) {
-            if xbox::is_xbox_controller(controller.vendor_id) {
-                xbox::update_xbox_controller(&mut controller, false);
-                controllers.push(controller);
-            }
+        if !xbox::is_xbox_controller(controller.vendor_id) {
+            continue;
+        }
+
+        let iter = seen_gips_map.get(&controller.gip);
+        if iter.is_none() {
+            xbox::update_xbox_controller(&mut controller, false);
+            seen_gips_map.insert(controller.gip, controller);
+        } else if controller.name != Controller::NO_NAME
+                && !controller.name.is_empty() && iter.unwrap().name != controller.name
+        {
+            xbox::update_xbox_controller(&mut controller, false);
+            seen_gips_map.remove(&controller.gip);
+            seen_gips_map.insert(controller.gip, controller);
         }
     }
 
-    Ok(controllers)
+    let mut vec: Vec<Controller> = seen_gips_map.values().cloned().collect();
+    rename_duplicate_controllers(&mut vec);
+
+    Ok(vec)
 }
 
 fn parse_fake_controller(controllers: &mut Vec<Controller>) {

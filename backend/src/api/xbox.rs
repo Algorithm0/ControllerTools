@@ -30,7 +30,6 @@ pub const XBOX_WIRELESS_ELITE_CONTROLLER_USB_PRODUCT_ID: u16 = 0x0b00;
 pub const XBOX_WIRELESS_ELITE_CONTROLLER_BT_PRODUCT_ID: u16 = 0x0b05;
 pub const XBOX_WIRELESS_ELITE_CONTROLLER_BTLE_PRODUCT_ID: u16 = 0x0b22;
 // Xbox Accessory
-pub const XBOX_ACCESSORY_PID: u16 = 0x02fe; // New accessory PID
 // pub const XBOX_ONE_REPORT_BT_SIZE: usize = 64;
 
 fn get_xbox_controller_name(product_id: u16) -> &'static str {
@@ -43,7 +42,6 @@ fn get_xbox_controller_name(product_id: u16) -> &'static str {
         XBOX_WIRELESS_ELITE_CONTROLLER_USB_PRODUCT_ID => "Xbox Elite 2",
         XBOX_WIRELESS_ELITE_CONTROLLER_BT_PRODUCT_ID => "Xbox Elite 2",
         XBOX_WIRELESS_ELITE_CONTROLLER_BTLE_PRODUCT_ID => "Xbox Elite 2",
-        XBOX_ACCESSORY_PID => "Wireless Adapter",
         _ => "Xbox Unknown",
     }
 }
@@ -54,7 +52,9 @@ pub fn is_xbox_controller(vendor_id: u16) -> bool {
 
 pub fn update_xbox_controller(controller: &mut Controller, bluetooth: bool) {
 
-    controller.name = get_xbox_controller_name(controller.product_id).to_string();
+    if controller.name.is_empty() {
+        controller.name = get_xbox_controller_name(controller.product_id).to_string();
+    }
     controller.capacity = if controller.gip.starts_with("gip") {
         get_battery_percentage_for_gip(&controller.gip)
     } else if bluetooth {
@@ -66,7 +66,7 @@ pub fn update_xbox_controller(controller: &mut Controller, bluetooth: bool) {
 
     controller.status =
     if controller.gip.starts_with("gip")
-    {Status::Unknown}
+        {Status::Unknown}
     else if bluetooth {
         Status::Unknown
     } else {

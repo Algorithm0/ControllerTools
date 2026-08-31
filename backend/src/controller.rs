@@ -27,12 +27,12 @@ pub struct Controller {
     #[serde(skip_serializing)]
     pub device_path: Option<String>,
     pub gip: String,  // New field for 'gip'
+    pub uniq: String,
 }
 
 impl Controller {
     pub fn from_udev(
         device: &Device,
-        mut name: &str,
         mut capacity: u8,
         mut status: Status,
         mut bluetooth: bool,
@@ -46,12 +46,25 @@ impl Controller {
             Some(device.devpath().to_string_lossy().to_string())
         };
 
+        let mut name = String::new();
+
+        for property in device.properties() {
+            if property.name().to_string_lossy() == "NAME" {
+                name = property.value().to_string_lossy().to_string();
+                break;
+            }
+        }
+
+        if name.is_empty() {
+            name = Self::NO_NAME.to_string();
+        }
+
         let vendor_id: u16 = device
             .property_value("ID_VENDOR_ID")
             .map(hex_os_str_to_u16)
             .unwrap_or(0);
         let product_id: u16 = device
-            .property_value("ID_MODEL_ID")
+            .attribute_value("id/product")
             .map(hex_os_str_to_u16)
             .unwrap_or(0);
             let gip = device_path.as_ref().map(|path| {
@@ -68,13 +81,14 @@ impl Controller {
             }).unwrap_or_else(|| "NA".to_string());
             // If gip is None, set it to "NA"
             // Set bluetooth to true if gip is not "NA"
-            if gip.starts_with("gip" ){
-                bluetooth = true }
-                else {bluetooth=false};
-
-
+            if gip.starts_with("gip" ) { bluetooth = true } else { bluetooth = false };
+        let uniq = match device.property_value("UNIQ") {
+            Some(s) => s.to_string_lossy().replace('"', ""),
+            None => String::new(),
+        };
+        
         Self {
-            name: name.to_string(),
+            name,
             vendor_id,
             product_id,
             capacity,
@@ -82,7 +96,8 @@ impl Controller {
             bluetooth,
             serial_number,
             device_path,
-             gip: gip.to_string(),
+            gip: gip.to_string(),
+            uniq,
         }
     }
 
@@ -99,6 +114,10 @@ impl Controller {
             Some(String::from_utf8_lossy(device_path_bytes).to_string())
         };
         let gip = "NA";
+        let uniq = match device_info.serial_number() {
+            Some(s) => s.to_string_lossy().replace('"', ""),
+            None => String::new(),
+        };
         Self {
             name: name.to_string(),
             product_id: device_info.product_id(),
@@ -107,7 +126,9 @@ impl Controller {
             status,
             bluetooth,
             serial_number,
-            device_path, gip: gip.to_string(),
+            device_path,
+            gip: gip.to_string(),
+            uniq,
         }
     }
 
@@ -126,18 +147,17 @@ impl Controller {
     pub fn is_discharging(&self) -> bool {
         self.status == Status::Discharging
     }
+
+    pub const NO_NAME: &str = "Unknown Controller";
 }
 
 fn hex_os_str_to_u16(hex_os_str: &OsStr) -> u16 {
     let hex_str = hex_os_str.to_string_lossy();
 
-    match u16::from_str_radix(&hex_str, 16) {
-        Ok(num) => num,
-        Err(err) => {
-            error!("Failed to parse hex string: {}", err);
-            0
-        }
-    }
+    u16::from_str_radix(&hex_str, 16).unwrap_or_else(|err| {
+        error!("Failed to parse hex string: {}", err);
+        0
+    })
 }
 
 #[cfg(test)]
