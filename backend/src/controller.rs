@@ -115,7 +115,7 @@ impl Controller {
         };
         let gip = "NA";
         let uniq = match device_info.serial_number() {
-            Some(s) => s.to_string_lossy().replace('"', ""),
+            Some(s) => s.to_string().replace('"', ""),
             None => String::new(),
         };
         Self {

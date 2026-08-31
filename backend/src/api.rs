@@ -7,7 +7,7 @@ use anyhow::Result;
 use hidapi::HidApi;
 use log::debug;
 use udev::Enumerator;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::controller::{Controller, Status};
 
@@ -223,17 +223,17 @@ pub fn controllers() -> Result<Vec<Controller>> {
         let iter = seen_gips_map.get(&controller.gip);
         if iter.is_none() {
             xbox::update_xbox_controller(&mut controller, false);
-            seen_gips_map.insert(controller.gip, controller);
+            seen_gips_map.insert(controller.gip.clone(), controller);
         } else if controller.name != Controller::NO_NAME
                 && !controller.name.is_empty() && iter.unwrap().name != controller.name
         {
             xbox::update_xbox_controller(&mut controller, false);
             seen_gips_map.remove(&controller.gip);
-            seen_gips_map.insert(controller.gip, controller);
+            seen_gips_map.insert(controller.gip.clone(), controller);
         }
     }
 
-    let mut vec: Vec<Controller> = seen_gips_map.drain().map(|(_, v)| v).collect();;
+    let mut vec: Vec<Controller> = seen_gips_map.drain().map(|(_, v)| v).collect();
     rename_duplicate_controllers(&mut vec);
 
     Ok(vec)
