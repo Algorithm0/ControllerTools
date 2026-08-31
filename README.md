@@ -1,13 +1,14 @@
 # Controller Tools
 
-> [!WARNING]
-> **This repository is archived and no longer maintained.** Issues and pull requests will not be reviewed or accepted. The plugin may continue to work on current Steam Deck firmware, but no further updates, bug fixes, or controller support will be released. Feel free to fork the project if you'd like to continue development.
-
 ![Release Store Downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fplugins.deckbrew.xyz%2Fplugins%3Fquery%3DController%2520Tools&query=%24%5B%3A1%5D.downloads&suffix=%20installs&label=decky%20store)
 ![Testing Store Downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Ftesting.deckbrew.xyz%2Fplugins%3Fquery%3DController%2520Tools&query=%24%5B%3A1%5D.downloads&suffix=%20installs&label=testing%20store)
 [![License: GPL 3.0](https://img.shields.io/github/license/jfernandez/ControllerTools)](./LICENSE.md)
 
-![plugin_demo](./assets/decky-loader-store-cover.png)
+This fork was created to fix the issue with Controllers connected via the Xbox Wireless Adapter not working:
+This was done but probably not properly because I am not a developer. I am running this on Bazzite so I cannot verify that it works on a steam deck. Also due to limitations, all controllers connected via the adapter will just show up as Wireless Adatper. You can see the battery life but cannot tell which controller is which. 
+
+Finally, this is a temporary fix until the main version (https://github.com/jfernandez/ControllerTools) can make this fix properly. I am not uploading to the store instead am providing the zip file.
+
 
 Steam Deck game controller plugin for [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader). Displays the connection type (Bluetooth, USB), current battery %, and charging status. 
 

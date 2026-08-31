@@ -1,6 +1,6 @@
 {
   "name": "controller-tools",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "The missing game controller menu. Displays the current battery % and charging status",
   "type": "module",
   "scripts": {
@@ -24,29 +24,15 @@
     "deck"
   ],
   "author": {
-    "name": "Jose Fernandez",
-    "email": "me@jfernandez.com",
-    "url": "https://github.com/jfernandez"
+    "name": "Joseph Onorio",
+     "url": "https://github.com/jsphonorio/ControllerTools"
   },
-  "contributors": [
-    {
-      "name": "Ludovic Galibert",
-      "email": "ludo@alphamercury.io",
-      "url": "https://github.com/ludokx"
-    }
-  ],
-  "maintainers": [
-    {
-      "name": "eXhumer",
-      "email": "exhumer@exhumer.cc",
-      "url": "https://github.com/eXhumer"
-    }
-  ],
+  
   "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/jfernandez/ControllerTools/issues"
   },
-  "homepage": "https://github.com/jfernandez/ControllerTools#readme",
+  "homepage": "https://github.com/jsphonorio/ControllerTools#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.8.1",

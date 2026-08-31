@@ -1,0 +1,49 @@
+name: ControllerTools
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Install dependencies and build
+      - name: Install dependencies
+        run: npm install
+      - name: Build plugin
+        run: npm run build
+
+      # Prepare zip structure
+      - name: Prepare package
+        run: |
+          mkdir -p pluginname
+          cp -r dist pluginname/
+          cp package.json plugin.json LICENSE main.py README.md pluginname/
+
+      # Create a zip archive
+      - name: Create zip file
+        run: zip -r pluginname-v${{ github.run_number }}.zip pluginname
+
+      # Upload artifact
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: pluginname
+          path: pluginname-v*.zip

@@ -7,6 +7,7 @@ use anyhow::Result;
 use hidapi::HidApi;
 use log::debug;
 use udev::Enumerator;
+use std::collections::HashSet;
 
 use crate::controller::{Controller, Status};
 
@@ -172,28 +173,26 @@ pub fn controllers() -> Result<Vec<Controller>> {
         }
     }
 
-    let mut unknown_controllers: Vec<_> = hidapi
-        .device_list()
-        .filter(|device_info| {
-            device_info.interface_number() == -1
-                && !generic::IGNORED_VENDORS.contains(&device_info.vendor_id())
-        })
-        .collect();
-    unknown_controllers.dedup_by(|a, b| a.path() == b.path());
-    for device_info in unknown_controllers {
-        let controller = generic::get_controller_data(device_info, &hidapi)?;
-        controllers.push(controller);
-    }
-
-    // for Xbox over USB, hidapi-rs is not finding controllers so fall back to using udev
     let mut enumerator = Enumerator::new()?;
-    enumerator.match_subsystem("usb")?;
+    enumerator.match_subsystem("input")?;
+
+    let mut controllers = Vec::new();
+    let mut seen_gips = HashSet::new();
+
     for device in enumerator.scan_devices()? {
-        let mut controller =
-            Controller::from_udev(&device, "Unknown Controller", 0, Status::Unknown, false);
-        if xbox::is_xbox_controller(controller.vendor_id) {
-            xbox::update_xbox_controller(&mut controller, false);
-            controllers.push(controller);
+        let mut controller = Controller::from_udev(&device, "Unknown Controller", 0, Status::Unknown, false);
+
+        // Only include records where gip starts with "gip" or "input" and exclude "gip0.1"
+        if !(controller.gip.starts_with("gip") || controller.gip.starts_with("input")) || controller.gip == "gip0.1" {
+            continue;
+        }
+
+        // Deduplicate based on 'gip'
+        if seen_gips.insert(controller.gip.clone()) {
+            if xbox::is_xbox_controller(controller.vendor_id) {
+                xbox::update_xbox_controller(&mut controller, false);
+                controllers.push(controller);
+            }
         }
     }
 

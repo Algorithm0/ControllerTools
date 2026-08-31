@@ -26,15 +26,16 @@ pub struct Controller {
     pub serial_number: Option<String>,
     #[serde(skip_serializing)]
     pub device_path: Option<String>,
+    pub gip: String,  // New field for 'gip'
 }
 
 impl Controller {
     pub fn from_udev(
         device: &Device,
-        name: &str,
-        capacity: u8,
-        status: Status,
-        bluetooth: bool,
+        mut name: &str,
+        mut capacity: u8,
+        mut status: Status,
+        mut bluetooth: bool,
     ) -> Self {
         let serial_number = device
             .property_value("ID_SERIAL_SHORT")
@@ -53,6 +54,24 @@ impl Controller {
             .property_value("ID_MODEL_ID")
             .map(hex_os_str_to_u16)
             .unwrap_or(0);
+            let gip = device_path.as_ref().map(|path| {
+                // Split the path into parts
+                let parts: Vec<&str> = path.split('/').collect();
+
+                // Look for a part that starts with "gip" and contains a '.'
+                if let Some(gip_part) = parts.iter().find(|&&part| part.starts_with("gip") && part.contains('.')) {
+                    gip_part.to_string()
+                } else {
+                    // Fallback to the last part of the path
+                    parts.last().unwrap_or(&"").to_string()
+                }
+            }).unwrap_or_else(|| "NA".to_string());
+            // If gip is None, set it to "NA"
+            // Set bluetooth to true if gip is not "NA"
+            if gip.starts_with("gip" ){
+                bluetooth = true }
+                else {bluetooth=false};
+
 
         Self {
             name: name.to_string(),
@@ -63,6 +82,7 @@ impl Controller {
             bluetooth,
             serial_number,
             device_path,
+             gip: gip.to_string(),
         }
     }
 
@@ -78,7 +98,7 @@ impl Controller {
         } else {
             Some(String::from_utf8_lossy(device_path_bytes).to_string())
         };
-
+        let gip = "NA";
         Self {
             name: name.to_string(),
             product_id: device_info.product_id(),
@@ -87,7 +107,7 @@ impl Controller {
             status,
             bluetooth,
             serial_number,
-            device_path,
+            device_path, gip: gip.to_string(),
         }
     }
 
