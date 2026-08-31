@@ -16,6 +16,8 @@ pub const DS_VENDOR_ID: u16 = 0x054c;
 pub const DS4_OLD_PRODUCT_ID: u16 = 0x05c4;
 // Dualshock4 product ID changed after playstation update 5.50
 pub const DS4_NEW_PRODUCT_ID: u16 = 0x09cc;
+// Dualshock4 product ID for the official Wireless USB Adapter
+pub const DS4_ADAPTER_PRODUCT_ID: u16 = 0x0ba0;
 
 const DS4_INPUT_REPORT_USB: u8 = 0x01;
 const DS4_INPUT_REPORT_USB_SIZE: usize = 64;

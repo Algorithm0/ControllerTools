@@ -147,6 +147,13 @@ pub fn controllers() -> Result<Vec<Controller>> {
 
                 controllers.push(controller);
             }
+            (playstation::DS_VENDOR_ID, playstation::DS4_ADAPTER_PRODUCT_ID) => {
+                debug!("Found new DualShock 4 controller: {:?}", device_info);
+                let controller =
+                    playstation::parse_dualshock_controller_data(device_info, &hidapi)?;
+
+                controllers.push(controller);
+            }
             (playstation::DS_VENDOR_ID, playstation::DS4_NEW_PRODUCT_ID) => {
                 debug!("Found new DualShock 4 controller: {:?}", device_info);
                 let controller =
