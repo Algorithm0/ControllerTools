@@ -233,7 +233,7 @@ pub fn controllers() -> Result<Vec<Controller>> {
         }
     }
 
-    let mut vec: Vec<Controller> = seen_gips_map.values().cloned().collect();
+    let mut vec: Vec<Controller> = seen_gips_map.drain().map(|(_, v)| v).collect();;
     rename_duplicate_controllers(&mut vec);
 
     Ok(vec)
