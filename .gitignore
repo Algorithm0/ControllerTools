@@ -35,3 +35,5 @@ backend/out
 cli/
 deck.json
 out/
+
+.idea/*
