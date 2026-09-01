@@ -21,13 +21,10 @@ pub const IGNORED_VENDORS: [u16; 5] = [
 
 pub fn get_controller_data(device_info: &DeviceInfo, _hidapi: &HidApi) -> Result<Controller> {
     let capacity: u8 = match get_bluetooth_address(device_info) {
-        Ok(address) => match get_battery_percentage(address) {
-            Ok(percentage) => percentage,
-            Err(err) => {
-                error!("get_battery_percentage failed because {}", err);
-                0
-            }
-        },
+        Ok(address) => get_battery_percentage(address).unwrap_or_else(|err| {
+            error!("get_battery_percentage failed because {}", err);
+            0
+        }),
         Err(err) => {
             error!("get_bluetooth_address failed because {}", err);
             0

@@ -19,5 +19,5 @@ export interface IController {
   vendorId: number;
   capacity: number;
   status: string;
-  bluetooth: boolean;
+  con_type: string;
 }

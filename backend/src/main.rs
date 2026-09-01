@@ -31,7 +31,14 @@ pub struct AppState {
 async fn main() {
     let args: Vec<String> = std::env::args().collect();
 
-    if args.len() != 3 {
+    if args.len() == 2 && args[1] == "test" || args[1] == "t" {
+        let controllers = api::controllers();
+        for controller in controllers.unwrap() {
+            println!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
+            println!("Name: {}", controller.name)
+        }
+        return;
+    } else if args.len() != 3 {
         panic!("Error: Expected 2 arguments, but got {}", args.len() - 1);
     }
 

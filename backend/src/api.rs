@@ -42,7 +42,7 @@ fn rename_duplicate_controllers(vec: &mut Vec<Controller>) {
                     .collect()
             };
 
-            c.name = format!("{} ({})", c.name.replace("Xbox ", "").replace("Microsoft ", ""), suffix);
+            c.name = format!("{} ({})", c.name.replace("Microsoft", "MS"), suffix);
         }
     }
 }
@@ -209,7 +209,7 @@ pub fn controllers() -> Result<Vec<Controller>> {
     let mut seen_gips_map = HashMap::new();
 
     for device in enumerator.scan_devices()? {
-        let mut controller = Controller::from_udev(&device, 0, Status::Unknown, false);
+        let mut controller = Controller::from_udev(&device, 0, Status::Unknown);
 
         // Only include records where gip starts with "gip" or "input" and exclude "gip0.1"
         if !(controller.gip.starts_with("gip") || controller.gip.starts_with("input")) || controller.gip == "gip0.1"  {
@@ -233,10 +233,10 @@ pub fn controllers() -> Result<Vec<Controller>> {
         }
     }
 
-    let mut vec: Vec<Controller> = seen_gips_map.drain().map(|(_, v)| v).collect();
-    rename_duplicate_controllers(&mut vec);
+    controllers.extend(seen_gips_map.into_values());
+    rename_duplicate_controllers(&mut controllers);
 
-    Ok(vec)
+    Ok(controllers)
 }
 
 fn parse_fake_controller(controllers: &mut Vec<Controller>) {

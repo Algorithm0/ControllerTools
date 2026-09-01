@@ -40,13 +40,10 @@ impl SettingsService {
     pub async fn new(file_path: &String) -> Result<Self> {
         let file = File::open(file_path).await;
         let settings = if let Ok(file) = file {
-            match serde_json::from_reader(file.into_std().await) {
-                Ok(settings) => settings,
-                Err(err) => {
-                    error!("Resetting config file due to parse failure: {}", err);
-                    Settings::default()
-                }
-            }
+            serde_json::from_reader(file.into_std().await).unwrap_or_else(|err| {
+                error!("Resetting config file due to parse failure: {}", err);
+                Settings::default()
+            })
         } else {
             Settings::default()
         };

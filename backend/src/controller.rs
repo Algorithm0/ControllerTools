@@ -13,6 +13,14 @@ pub enum Status {
     Unknown,
 }
 
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ConnectionType {
+    Wire,
+    Bluetooth,
+    Dongle,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Controller {
@@ -21,7 +29,7 @@ pub struct Controller {
     pub vendor_id: u16,
     pub capacity: u8,
     pub status: Status,
-    pub bluetooth: bool,
+    pub con_type: ConnectionType,
     #[serde(skip_serializing)]
     pub serial_number: Option<String>,
     #[serde(skip_serializing)]
@@ -33,9 +41,8 @@ pub struct Controller {
 impl Controller {
     pub fn from_udev(
         device: &Device,
-        mut capacity: u8,
-        mut status: Status,
-        mut bluetooth: bool,
+        capacity: u8,
+        status: Status,
     ) -> Self {
         let serial_number = device
             .property_value("ID_SERIAL_SHORT")
@@ -50,7 +57,7 @@ impl Controller {
 
         for property in device.properties() {
             if property.name().to_string_lossy() == "NAME" {
-                name = property.value().to_string_lossy().to_string();
+                name = property.value().to_string_lossy().replace('"', "");
                 break;
             }
         }
@@ -81,11 +88,17 @@ impl Controller {
             }).unwrap_or_else(|| "NA".to_string());
             // If gip is None, set it to "NA"
             // Set bluetooth to true if gip is not "NA"
-            if gip.starts_with("gip" ) { bluetooth = true } else { bluetooth = false };
         let uniq = match device.property_value("UNIQ") {
             Some(s) => s.to_string_lossy().replace('"', ""),
             None => String::new(),
         };
+        let mut con_type = ConnectionType::Wire;
+        let usb_driver = device.property_value("ID_USB_DRIVER");
+        if usb_driver.is_none() && gip.starts_with("gip") {
+            con_type = ConnectionType::Bluetooth;
+        } else if usb_driver.is_some() && usb_driver.unwrap().to_string_lossy() == "xone-dongle" {
+            con_type = ConnectionType::Dongle;
+        }
         
         Self {
             name,
@@ -93,7 +106,7 @@ impl Controller {
             product_id,
             capacity,
             status,
-            bluetooth,
+            con_type,
             serial_number,
             device_path,
             gip: gip.to_string(),
@@ -106,7 +119,12 @@ impl Controller {
             .serial_number()
             .filter(|serial_number| !serial_number.is_empty())
             .map(|serial_number| serial_number.to_string());
-        let bluetooth = device_info.interface_number() == -1;
+        let con_type;
+        if device_info.interface_number() == -1 {
+            con_type = ConnectionType::Bluetooth;
+        } else {
+            con_type = ConnectionType::Wire;
+        }
         let device_path_bytes = device_info.path().to_bytes();
         let device_path = if device_path_bytes.is_empty() {
             None
@@ -124,7 +142,7 @@ impl Controller {
             vendor_id: device_info.vendor_id(),
             capacity,
             status,
-            bluetooth,
+            con_type,
             serial_number,
             device_path,
             gip: gip.to_string(),
@@ -173,9 +191,11 @@ mod tests {
             vendor_id: 0x02ea,
             capacity: 0,
             status: Status::Discharging,
-            bluetooth: false,
+            con_type: false,
             serial_number: None,
             device_path: None,
+            gip: "".to_string(),
+            uniq: "".to_string(),
         };
         assert!(controller.is_discharging());
 
@@ -195,9 +215,11 @@ mod tests {
             vendor_id: 0x02ea,
             capacity: 0,
             status: Status::Discharging,
-            bluetooth: false,
+            con_type: false,
             serial_number: Some("1234567890".to_string()),
             device_path: Some("/dev/input/js0".to_string()),
+            gip: "".to_string(),
+            uniq: "".to_string(),
         };
         let serialized = serde_json::to_string(&controller).unwrap();
         assert_eq!(
@@ -214,9 +236,11 @@ mod tests {
             vendor_id: 0x02ea,
             capacity: 0,
             status: Status::Discharging,
-            bluetooth: false,
+            con_type: false,
             device_path: Some("/dev/input/js0".to_string()),
+            gip: "".to_string(),
             serial_number: Some("1234567890".to_string()),
+            uniq: "".to_string(),
         };
 
         assert_eq!(controller.id(), "/dev/input/js0");

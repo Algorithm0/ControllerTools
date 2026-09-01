@@ -6,7 +6,7 @@ use log::error;
 use log::info;
 use serde::{Deserialize, Serialize};
 
-use crate::controller::Status;
+use crate::controller::{ConnectionType, Status};
 
 use super::Controller;
 
@@ -163,12 +163,12 @@ pub fn parse_dualshock_controller_data(
     let res = device.read(&mut buf[..])?;
     let mut battery_data: u8 = 0;
     let mut cable_state: u8 = 0;
-    if !controller.bluetooth && buf[0] == DS4_INPUT_REPORT_USB && res == DS4_INPUT_REPORT_USB_SIZE {
+    if controller.con_type == ConnectionType::Wire && buf[0] == DS4_INPUT_REPORT_USB && res == DS4_INPUT_REPORT_USB_SIZE {
         let usb_report: Dualshock4InputReportUSB = bincode::deserialize(&buf)?;
         let ds4_report: DualShock4InputReportCommon = usb_report.common;
         battery_data = ds4_report.status[0] & DS4_STATUS_BATTERY_CAPACITY;
         cable_state = ds4_report.status[0] & DS4_STATUS0_CABLE_STATE;
-    } else if controller.bluetooth
+    } else if controller.con_type == ConnectionType::Bluetooth
         && buf[0] == DS4_INPUT_REPORT_BT
         && res == DS4_INPUT_REPORT_BT_SIZE
     {
@@ -209,9 +209,9 @@ pub fn parse_dualsense_controller_data(
     let res = device.read(&mut buf[..])?;
 
     let ds_report: DualSenseInputReport;
-    if !controller.bluetooth && buf[0] == DS_INPUT_REPORT_USB && res == DS_INPUT_REPORT_USB_SIZE {
+    if controller.con_type == ConnectionType::Wire && buf[0] == DS_INPUT_REPORT_USB && res == DS_INPUT_REPORT_USB_SIZE {
         ds_report = bincode::deserialize(&buf[1..])?;
-    } else if controller.bluetooth && buf[0] == DS_INPUT_REPORT_BT && res == DS_INPUT_REPORT_BT_SIZE
+    } else if controller.con_type == ConnectionType::Bluetooth && buf[0] == DS_INPUT_REPORT_BT && res == DS_INPUT_REPORT_BT_SIZE
     {
         ds_report = bincode::deserialize(&buf[2..])?;
     } else {

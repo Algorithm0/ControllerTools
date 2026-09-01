@@ -6,10 +6,17 @@ import {
 
 import { IconContext } from "react-icons";
 import { BiBluetooth, BiUsb } from "react-icons/bi";
+import { FaWifi } from "react-icons/fa"
 
 import BatteryIcon from "./BatteryIcon";
 import VendorIcon from "./VendorIcon";
 import { IController } from "../types";
+
+export enum ConnectionType {
+  Wire = "wire",
+  Bluetooth = "bluetooth",
+  Dongle = "dongle",
+}
 
 const FieldWithSeparator = joinClassNames(gamepadDialogClasses.Field, gamepadDialogClasses.WithBottomSeparatorStandard);
 
@@ -24,7 +31,7 @@ const Controller = ({ controller }: ControllerProps) => {
         <div className={gamepadDialogClasses.FieldLabelRow}>
           <div className={gamepadDialogClasses.FieldLabel}>
             <IconContext.Provider value={{ style: { verticalAlign: 'middle', marginRight: '10px' } }}>
-              {controller.bluetooth ? <BiBluetooth /> : <BiUsb />}
+              { controller.con_type == ConnectionType.Bluetooth ? <BiBluetooth /> : controller.con_type == ConnectionType.Wire ? <BiUsb /> : <FaWifi /> }
             </IconContext.Provider>
             <IconContext.Provider value={{ style: { verticalAlign: 'middle', marginRight: '5px' } }}>
               <VendorIcon controller={controller}/>
@@ -37,7 +44,7 @@ const Controller = ({ controller }: ControllerProps) => {
               {
                 // only show battery capacity for non-MS vendors unless capacity is > 0 and over BT
                 // since we don't have the battery capacity yet for Xbox over USB
-                (controller.vendorId != 0x045E || (controller.capacity > 0 && controller.bluetooth)) &&
+                (controller.vendorId != 0x045E || (controller.capacity > 0 && controller.con_type != ConnectionType.Wire)) &&
                 <span style={{ display: "inline-block", textAlign: "right", }}>{controller.capacity}%</span>
               }
               <IconContext.Provider value={{ style: { verticalAlign: 'middle', marginLeft: "6px" }, size: '2em' }}>
